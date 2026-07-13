@@ -1,0 +1,280 @@
+{
+  "info": {
+    "name": "Inventory API",
+    "description": "Colección para probar la Inventory API. Ejecuta las requests en orden — el ID del producto creado se guarda automáticamente.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "productId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Crear producto (POST /products)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "pm.test('Tiene id y completed=false', () => {",
+              "  const b = pm.response.json();",
+              "  pm.expect(b.id).to.be.a('string');",
+              "  pm.expect(b.name).to.eql('Polo básico blanco');",
+              "  pm.expect(b.price).to.eql(25);",
+              "  pm.expect(b.stock).to.eql(40);",
+              "});",
+              "pm.collectionVariables.set('productId', pm.response.json().id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Polo básico blanco\",\n  \"price\": 25,\n  \"stock\": 40,\n  \"category\": \"ropa\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
+      }
+    },
+    {
+      "name": "2. Crear producto sin name (debe fallar 400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 400', () => pm.response.to.have.status(400));",
+              "pm.test('Tiene mensaje de error', () => pm.expect(pm.response.json().error).to.exist);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"price\": 25,\n  \"stock\": 10\n}" },
+        "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
+      }
+    },
+    {
+      "name": "3. Crear producto con price negativo (debe fallar 400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 400', () => pm.response.to.have.status(400));",
+              "pm.test('Tiene mensaje de error', () => pm.expect(pm.response.json().error).to.exist);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Producto inválido\",\n  \"price\": -5,\n  \"stock\": 10\n}" },
+        "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
+      }
+    },
+    {
+      "name": "4. Listar todos los productos (GET /products)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Body es un array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
+      }
+    },
+    {
+      "name": "5. Ver reporte de inventario (GET /products/report)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Tiene totalProducts, lowStockProducts y totalInventoryValue', () => {",
+              "  const b = pm.response.json();",
+              "  pm.expect(b.totalProducts).to.be.a('number');",
+              "  pm.expect(b.lowStockProducts).to.be.an('array');",
+              "  pm.expect(b.totalInventoryValue).to.be.a('number');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/products/report", "host": ["{{baseUrl}}"], "path": ["products", "report"] }
+      }
+    },
+    {
+      "name": "6. Obtener producto por ID (GET /products/:id)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('El id coincide', () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('productId')));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] }
+      }
+    },
+    {
+      "name": "7. Obtener producto inexistente (debe fallar 404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": ["pm.test('Status 404', () => pm.response.to.have.status(404));"],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/products/id-inexistente", "host": ["{{baseUrl}}"], "path": ["products", "id-inexistente"] }
+      }
+    },
+    {
+      "name": "8. Editar producto (PUT /products/:id)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('El nombre fue actualizado', () => pm.expect(pm.response.json().name).to.eql('Polo básico negro'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Polo básico negro\",\n  \"price\": 30\n}" },
+        "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] }
+      }
+    },
+    {
+      "name": "9. Aumentar stock (PATCH /products/:id/stock)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Stock aumentó en 10', () => pm.expect(pm.response.json().stock).to.eql(50));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"quantity\": 10\n}" },
+        "url": { "raw": "{{baseUrl}}/products/{{productId}}/stock", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}", "stock"] }
+      }
+    },
+    {
+      "name": "10. Reducir stock (PATCH /products/:id/stock)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Stock redujo en 5', () => pm.expect(pm.response.json().stock).to.eql(45));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"quantity\": -5\n}" },
+        "url": { "raw": "{{baseUrl}}/products/{{productId}}/stock", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}", "stock"] }
+      }
+    },
+    {
+      "name": "11. Reducir stock a negativo (debe fallar 400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 400', () => pm.response.to.have.status(400));",
+              "pm.test('Tiene mensaje de error', () => pm.expect(pm.response.json().error).to.exist);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"quantity\": -9999\n}" },
+        "url": { "raw": "{{baseUrl}}/products/{{productId}}/stock", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}", "stock"] }
+      }
+    },
+    {
+      "name": "12. Eliminar producto (DELETE /products/:id)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] }
+      }
+    },
+    {
+      "name": "13. Verificar que ya no existe (debe fallar 404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": ["pm.test('Status 404 - producto eliminado', () => pm.response.to.have.status(404));"],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] }
+      }
+    }
+  ]
+}
